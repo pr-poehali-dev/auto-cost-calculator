@@ -81,29 +81,50 @@ const Index = () => {
       <div className="max-w-md mx-auto p-4 space-y-4">
         {!showCalculator ? (
           <>
-            {/* Categories */}
-            <div className="space-y-3">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Категории услуг</h2>
-              {categories.map((category) => (
-                <Card key={category.id} className="bg-card border-border">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-3 text-foreground">
-                      <Icon name={category.icon as any} size={24} className="text-primary" />
-                      {category.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {category.services.map((service) => (
-                      <div key={service.id} className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                        <span className="text-sm text-muted-foreground">{service.name}</span>
-                        <Badge variant="secondary" className="bg-primary text-primary-foreground">
-                          {service.price.toLocaleString()} ₽
-                        </Badge>
+            {/* Categories Grid */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold text-foreground">Категории услуг</h2>
+              
+              <div className="grid grid-cols-2 gap-3">
+                {categories.map((category) => (
+                  <div key={category.id} className="bg-card border border-border rounded-xl p-4 hover:bg-muted/50 transition-colors cursor-pointer group">
+                    <div className="text-center space-y-2">
+                      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto group-hover:bg-primary/20 transition-colors">
+                        <Icon name={category.icon as any} size={24} className="text-primary" />
                       </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              ))}
+                      <h3 className="text-sm font-medium text-foreground leading-tight">{category.name}</h3>
+                      <p className="text-xs text-muted-foreground">{category.services.length} услуг</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Popular Services */}
+              <div className="mt-6">
+                <h3 className="text-base font-medium text-foreground mb-3">Популярные услуги</h3>
+                <div className="space-y-2">
+                  {[
+                    { name: "Замена масла", price: 1500, category: "ТО" },
+                    { name: "Диагностика", price: 1200, category: "ТО" },
+                    { name: "Покраска элемента", price: 3000, category: "Кузов" },
+                  ].map((service, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-card border border-border rounded-lg hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                          <Icon name="Star" size={14} className="text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{service.name}</p>
+                          <p className="text-xs text-muted-foreground">{service.category}</p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                        {service.price.toLocaleString()} ₽
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Create Order Button */}
