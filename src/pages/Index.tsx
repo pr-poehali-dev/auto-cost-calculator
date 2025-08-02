@@ -8,12 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Icon from "@/components/ui/icon";
 
+interface ServiceDetail {
+  name: string;
+  price: number;
+}
+
 interface Order {
   id: number;
   date: string;
   carBrand: string;
   carModel: string;
-  services: string[];
+  services: ServiceDetail[];
+  complexityCoefficient: number;
   total: number;
   hasCommunityDiscount: boolean;
 }
@@ -26,13 +32,16 @@ const Index = () => {
   const [currentTab, setCurrentTab] = useState("home");
   const [carBrand, setCarBrand] = useState("");
   const [carModel, setCarModel] = useState("");
+  const [complexityCoefficient, setComplexityCoefficient] = useState(1);
+  const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
   const [orders, setOrders] = useState<Order[]>([
     {
       id: 1,
       date: "2024-02-01",
       carBrand: "Toyota",
       carModel: "Camry",
-      services: ["Замена масла", "Диагностика"],
+      services: [{name: "Замена масла", price: 1500}, {name: "Диагностика", price: 1200}],
+      complexityCoefficient: 1.2,
       total: 2700,
       hasCommunityDiscount: true
     },
@@ -41,7 +50,8 @@ const Index = () => {
       date: "2024-02-02",
       carBrand: "BMW",
       carModel: "X5",
-      services: ["Покраска элемента"],
+      services: [{name: "Покраска элемента", price: 3000}],
+      complexityCoefficient: 1,
       total: 3000,
       hasCommunityDiscount: false
     }
@@ -93,8 +103,9 @@ const Index = () => {
   const allServices = categories.flatMap(cat => cat.services);
   const selectedServicesData = allServices.filter(service => selectedServices.includes(service.id));
   const subtotal = selectedServicesData.reduce((sum, service) => sum + service.price, 0);
-  const discount = isCommunityDiscount ? subtotal * 0.15 : 0;
-  const total = subtotal - discount;
+  const withComplexity = subtotal * complexityCoefficient;
+  const discount = isCommunityDiscount ? withComplexity * 0.15 : 0;
+  const total = withComplexity - discount;
 
   const toggleService = (serviceId: number) => {
     setSelectedServices(prev => 
@@ -112,7 +123,8 @@ const Index = () => {
       date: new Date().toISOString().split('T')[0],
       carBrand,
       carModel,
-      services: selectedServicesData.map(s => s.name),
+      services: selectedServicesData.map(s => ({name: s.name, price: s.price})),
+      complexityCoefficient,
       total,
       hasCommunityDiscount: isCommunityDiscount
     };
@@ -121,6 +133,7 @@ const Index = () => {
     setSelectedServices([]);
     setCarBrand("");
     setCarModel("");
+    setComplexityCoefficient(1);
     setIsCommunityDiscount(false);
     setShowCalculator(false);
     setCurrentTab("orders");
@@ -300,6 +313,25 @@ const Index = () => {
                         />
                       </div>
                     </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground">Коэффициент сложности</label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Input
+                          type="number"
+                          value={complexityCoefficient}
+                          onChange={(e) => setComplexityCoefficient(Number(e.target.value))}
+                          placeholder="1.0"
+                          min="0.5"
+                          max="3.0"
+                          step="0.1"
+                          className="flex-1"
+                        />
+                        <span className="text-xs text-muted-foreground">x{complexityCoefficient}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        1.0 - стандартная сложность, 1.5 - повышенная, 2.0+ - высокая
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -352,6 +384,13 @@ const Index = () => {
                         <span className="text-foreground">{subtotal.toLocaleString()} ₽</span>
                       </div>
                       
+                      {complexityCoefficient !== 1 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Коэффициент сложности (x{complexityCoefficient}):</span>
+                          <span className="text-foreground">{withComplexity.toLocaleString()} ₽</span>
+                        </div>
+                      )}
+                      
                       {isCommunityDiscount && (
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Скидка (-15%):</span>
@@ -399,17 +438,49 @@ const Index = () => {
                           <h3 className="font-medium text-foreground">{order.carBrand} {order.carModel}</h3>
                           <p className="text-sm text-muted-foreground">{new Date(order.date).toLocaleDateString('ru')}</p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex flex-col gap-1">
                           <p className="font-bold text-primary">{order.total.toLocaleString()} ₽</p>
-                          {order.hasCommunityDiscount && (
-                            <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
-                              -15%
-                            </Badge>
-                          )}
+                          <div className="flex gap-1">
+                            {order.hasCommunityDiscount && (
+                              <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
+                                -15%
+                              </Badge>
+                            )}
+                            {order.complexityCoefficient !== 1 && (
+                              <Badge variant="outline" className="text-xs border-primary/30 text-primary">
+                                x{order.complexityCoefficient}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {order.services.join(", ")}
+                      
+                      <div className="flex justify-between items-center">
+                        <div className="text-sm text-muted-foreground flex-1">
+                          {expandedOrder === order.id ? (
+                            <div className="space-y-1">
+                              {order.services.map((service, index) => (
+                                <div key={index} className="flex justify-between">
+                                  <span>{service.name}</span>
+                                  <span>{service.price.toLocaleString()} ₽</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span>{order.services.map(s => s.name).join(", ")}</span>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
+                          className="text-muted-foreground hover:text-foreground ml-2"
+                        >
+                          <Icon 
+                            name={expandedOrder === order.id ? "ChevronUp" : "ChevronDown"} 
+                            size={16} 
+                          />
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
